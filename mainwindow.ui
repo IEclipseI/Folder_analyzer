@@ -161,7 +161,7 @@
          </widget>
         </item>
         <item row="1" column="0" rowspan="3" colspan="3">
-         <widget class="QTreeWidget" name="duplicates">
+         <widget class="QTreeWidget" name="filesWithStr">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>

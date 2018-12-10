@@ -3,8 +3,7 @@ project(folder_analyzer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS_DEBUG " -Wall -pedantic -o3")
-set(CMAKE_CXX_FLAGS_RELEASE "-o3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3")
 
 #-fsanitize=address
 #--coverage
@@ -22,8 +21,8 @@ include_directories(${Qt5Core_INCLUDE_DIRS})
 
 add_executable(folder_analyzer main.cpp
         mainwindow.cpp mainwindow.h mainwindow.ui
-        searchdialog/searchdialog.cpp searchdialog/searchdialog.h searchdialog/searchdialog.ui
-        files_util/files_util.cpp files_util/files_util.h)
+        indexingdialog/indexingdialog.cpp indexingdialog/indexingdialog.h indexingdialog/indexingdialog.ui
+        files_util/FilesUtil.cpp files_util/FilesUtil.h)
 
 target_link_libraries(folder_analyzer Qt5::Widgets)
 target_link_libraries(folder_analyzer Qt5::Core)

@@ -6,31 +6,38 @@
 #include <QHash>
 #include <QtCore/QThread>
 #include <QMetaType>
+#include <QtGui/QDesktopServices>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "searchdialog/searchdialog.h"
-#include "searchdialog/ui_searchdialog.h"
+#include "indexingdialog/indexingdialog.h"
+#include "indexingdialog/ui_indexingdialog.h"
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
-        ui(new Ui::MainWindow) {
+        ui(new Ui::MainWindow),
+        index(new Index()) {
     ui->setupUi(this);
     ui->removeFromListButton->setEnabled(false);
     ui->directoryList->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->directoryList->header()->setSectionResizeMode(1, QHeaderView::Stretch);
-    connect(ui->inputDirectoryName, SIGNAL(textChanged(const QString&)), this, SLOT(inputDirectoryNameTextChanged(const QString &)));
+    connect(ui->inputDirectoryName, SIGNAL(textChanged(
+                                                   const QString&)), this, SLOT(inputDirectoryNameTextChanged(
+                                                                                        const QString &)));
     connect(ui->chooseDirectoryButton, SIGNAL(clicked()), this, SLOT(chooseDir()));
-    connect(ui->addToTrackButton, SIGNAL(clicked()), this, SLOT(addToSearch()));
+    connect(ui->addToTrackButton, SIGNAL(clicked()), this, SLOT(addDirectoryToTrackList()));
     connect(ui->removeFromListButton, SIGNAL(clicked()), this, SLOT(removeFromList()));
     connect(ui->directoryList, SIGNAL(itemSelectionChanged()), this, SLOT(directoryListItemSelectionChanged()));
-    connect(ui->addToTrackButton, SIGNAL(clicked()), this, SLOT(search()));
+    connect(ui->filesWithStr, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
+            SLOT(openFile(QTreeWidgetItem * )));
+    //    connect(ui->addToTrackButton, SIGNAL(clicked()), this, SLOT(addDirectory()));
     int size = 400;
     ui->splitter->setSizes(QList<int>{ui->splitter->height() - size, size});
     connect(ui->find, SIGNAL(clicked()), this, SLOT(find()));
 }
 
 MainWindow::~MainWindow() {
+    delete index;
     delete ui;
 }
 
@@ -47,7 +54,7 @@ void MainWindow::chooseDir() {
     if (!directory.isEmpty()) ui->inputDirectoryName->setText(directory);
 }
 
-void MainWindow::addToSearch() {
+void MainWindow::addDirectoryToTrackList() {
     auto dir_path = QDir(ui->inputDirectoryName->text()).absolutePath();
     for (int i = ui->directoryList->topLevelItemCount() - 1; i >= 0; i--) {
         QTreeWidgetItem *item = ui->directoryList->topLevelItem(i);
@@ -62,6 +69,7 @@ void MainWindow::addToSearch() {
     }
     auto item = new QTreeWidgetItem(ui->directoryList);
     QDir d(ui->inputDirectoryName->text());
+    addDirectory(d.absolutePath());
     item->setText(0, d.dirName());
     item->setText(1, d.absolutePath());
     ui->directoryList->addTopLevelItem(item);
@@ -70,7 +78,7 @@ void MainWindow::addToSearch() {
 
 void MainWindow::removeFromList() {
     for (auto a : ui->directoryList->selectedItems()) {
-        filesUtil.removeDirectory(a->text(1));
+        FilesUtil().removeDirectory(*index, a->text(1));
     }
     qDeleteAll(ui->directoryList->selectedItems());
 }
@@ -79,21 +87,42 @@ void MainWindow::directoryListItemSelectionChanged() {
     ui->removeFromListButton->setEnabled(ui->directoryList->selectedItems().length() != 0);
 }
 
-void MainWindow::search() {
-    for (int i = 0; i < ui->directoryList->topLevelItemCount(); i++) {
-        filesUtil.addDirectory(ui->directoryList->topLevelItem(i)->text(1));
+void MainWindow::addDirectory(QString dir) {
+    auto *files_util_thread = new QThread();
+    auto *files_util = new FilesUtil(index, dir);
+    auto *indexing_dialog = new IndexingDialog(files_util_thread, this);
+    files_util->moveToThread(files_util_thread);
+    connect(files_util_thread, SIGNAL(started()), files_util, SLOT(addDirectory()));
+    connect(files_util, SIGNAL(filesIndexed(int)), indexing_dialog, SLOT(updateBar(int)));
+    connect(files_util, SIGNAL(filesToIndexCounted(int)), indexing_dialog, SLOT(setBarRange(int)));
+    connect(files_util, SIGNAL(indexingEnds(int)), files_util_thread, SLOT(quit()));
+    connect(files_util, SIGNAL(indexingEnds(int)), indexing_dialog, SLOT(done(int)));
+    connect(files_util, SIGNAL(indexingEnds(int)), files_util, SLOT(deleteLater()));
+    connect(files_util_thread, SIGNAL(finished()), files_util_thread, SLOT(deleteLater()));
+    files_util_thread->start();
+    if (indexing_dialog->exec() == QDialog::Rejected) {
+        indexing_dialog->stopSearch();
     }
+    delete indexing_dialog;
+
+
+
+//    FilesUtil().addDirectory(index, dir);
 }
 
 void MainWindow::find() {
-    ui->duplicates->clear();
-    QString str = ui->stringInput->text();
-    QVector<QString> filesWithStr = filesUtil.findFilesWith(str);
-    for (auto &s : filesWithStr) {
-        auto *item = new QTreeWidgetItem(ui->duplicates);
-        ui->duplicates->addTopLevelItem(item);
+    ui->filesWithStr->clear();
+    QVector<QString> files = FilesUtil().findFilesWith(*index, ui->stringInput->text());
+    for (auto &s : files) {
+        auto *item = new QTreeWidgetItem(ui->filesWithStr);
+        ui->filesWithStr->addTopLevelItem(item);
         QDir file(s);
         item->setText(0, file.absolutePath());
         item->setText(1, file.absolutePath());
     }
+}
+
+void MainWindow::openFile(QTreeWidgetItem *item) {
+    if (item != nullptr)
+        QDesktopServices::openUrl(QUrl::fromLocalFile(item->text(0)));
 }

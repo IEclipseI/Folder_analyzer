@@ -2,7 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "files_util/files_util.h"
+#include <QtWidgets/QTreeWidgetItem>
+#include "files_util/FilesUtil.h"
+
+
 
 namespace Ui {
 class MainWindow;
@@ -20,15 +23,17 @@ public:
 private slots:
     void inputDirectoryNameTextChanged(const QString &arg1);
     void chooseDir();
-    void addToSearch();
+    void addDirectoryToTrackList();
     void removeFromList();
     void directoryListItemSelectionChanged();
-    void search();
+    void addDirectory(QString);
     void find();
+    void openFile(QTreeWidgetItem*);
 private:
     //Hz
     Ui::MainWindow *ui;
-    files_util filesUtil;
+    Index* index;
+//    FilesUtil files_util;
 };
 
 #endif // MAINWINDOW_H
