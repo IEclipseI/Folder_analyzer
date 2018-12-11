@@ -1,18 +1,16 @@
 #include "indexingdialog.h"
 #include "ui_indexingdialog.h"
 
-IndexingDialog::IndexingDialog(QThread* searchThread, QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::IndexingDialog),
-    indexingThread(searchThread)
-{
+IndexingDialog::IndexingDialog(QThread *searchThread, QWidget *parent) :
+        QDialog(parent),
+        ui(new Ui::IndexingDialog),
+        indexingThread(searchThread) {
     ui->setupUi(this);
     connect(ui->stopSearchButton, SIGNAL(clicked()), this, SLOT(stopSearch()));
     ui->progressBar->setValue(0);
 }
 
-IndexingDialog::~IndexingDialog()
-{
+IndexingDialog::~IndexingDialog() {
     delete ui;
 }
 
@@ -26,6 +24,6 @@ void IndexingDialog::updateBar(int value) {
 }
 
 
-void IndexingDialog::setBarRange(int b){
+void IndexingDialog::setBarRange(int b) {
     ui->progressBar->setMaximum(b);
 }

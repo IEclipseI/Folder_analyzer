@@ -28,10 +28,8 @@ void FilesUtil::addDirectory() {
 
 void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
     try {
-
         if (!index.dirs_info.contains(directory)) {
             index.dirs_info.insert(directory, QSet<QString>{});
-            QSet<QString> &dir = *index.dirs_info.find(directory);
             QDirIterator it(directory, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
             QVector<QString> files;
             while (it.hasNext()) {
@@ -41,6 +39,7 @@ void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
             }
             emit filesToIndexCounted(files.size());
             int count = 0;
+            QSet<QString> &dir = *index.dirs_info.find(directory);
             for (auto &filepath : files) {
                 resolveInterraptionRequest();
                 if (!index.files_info.contains(filepath)) {
@@ -55,7 +54,7 @@ void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
                 emit filesIndexed(++count);
             }
         }
-    } catch(...) {
+    } catch (...) {
         //interruption was requested
     }
 }

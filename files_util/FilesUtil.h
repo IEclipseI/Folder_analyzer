@@ -11,10 +11,12 @@
 #include <QtCore/QSet>
 #include <QtCore/QVector>
 #include <unordered_set>
+#include <iostream>
 
-static const int BUFFER_SIZE = 1 << 18;
-static const int TRIGRAM_SIZE = 6;
-
+namespace {
+    const int BUFFER_SIZE = 1 << 18;
+    const int TRIGRAM_SIZE = 6;
+}
 class FilesUtil;
 
 class Index {
@@ -28,7 +30,7 @@ class FilesUtil: public QObject {
     Q_OBJECT
 public:
     FilesUtil(Index* index, QString directory, QObject* parent = 0);
-    FilesUtil(QObject* parent = nullptr):QObject(parent){};
+    FilesUtil(QObject* parent = nullptr):QObject(parent), index_(nullptr), dir_(""){};
     QVector<QString> findFilesWith(Index&, QString);
     void removeDirectory(Index&, QString);
 
@@ -49,6 +51,11 @@ private:
 private:
     Index* index_;
     QString dir_;
+    struct TrigramsExtractor {
+        void don(){
+            std::cout << "ddon";
+        }
+    };
 //    QHash<QString, QSet<uint64_t>> files_info;
 //    QHash<QString, QSet<QString>> dirs_info;
      //😺 qwerty qwerty
