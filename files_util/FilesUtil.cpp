@@ -11,65 +11,69 @@
 #include <QHash>
 #include <QtWidgets/QDialog>
 #include <QtCore/QThread>
+#include "TrigramsExtracter/TrigramsExtracter.h"
+#include <algorithm>
+#include <functional>
+#include <thread>
+#include <cmath>
+#include <files_util/StringSearcher/StringSearcher.h>
+
 
 FilesUtil::FilesUtil(Index *index, QString directory, QObject *parent) : QObject(parent), index_(index),
-                                                                         dir_(directory) {
-}
-
-void FilesUtil::resolveInterraptionRequest() {
-    if (QThread::currentThread()->isInterruptionRequested())
-        throw std::exception();
+                                                                         dir_(directory),
+                                                                         filesWithStr(QVector<QString>{}) {
 }
 
 void FilesUtil::addDirectory() {
     addDirectoryImpl(*index_, dir_);
-    emit indexingEnds(QDialog::Accepted);
 }
 
 void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
-    try {
-        if (!index.dirs_info.contains(directory)) {
-            index.dirs_info.insert(directory, QSet<QString>{});
-            QDirIterator it(directory, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
-            QVector<QString> files;
-            while (it.hasNext()) {
-                files.push_back(it.next());
-                if (it.fileInfo().isSymLink())
-                    files.pop_back();
-            }
-            emit filesToIndexCounted(files.size());
-            int count = 0;
-            QSet<QString> &dir = *index.dirs_info.find(directory);
-            for (auto &filepath : files) {
-                resolveInterraptionRequest();
-                if (!index.files_info.contains(filepath)) {
-                    index.files_info.insert(filepath, QSet<uint64_t>{});
-                    dir.insert(filepath);
-                    QSet<uint64_t> &s = index.files_info.find(filepath).value();
-                    getFileTrigrams(filepath, s);
-                    if (s.empty()) {
-                        index.files_info.remove(filepath);
-                    }
-                }
-                emit filesIndexed(++count);
-            }
+    if (!index.dirs_info.contains(directory)) {
+        index.dirs_info.insert(directory, QSet<QString>{});
+        QDirIterator it(directory, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+        QVector<QPair<QString, qint64>> files;
+        while (it.hasNext()) {
+            files.push_back(QPair<QString, qint64>(it.next(), it.fileInfo().size()));
+            if (it.fileInfo().isSymLink())
+                files.pop_back();
         }
-    } catch (...) {
-        //interruption was requested
+        emit filesToIndexCounted(files.size());
+
+        std::sort(files.begin(), files.end(),
+                  [](const QPair<QString, qint64> &a, const QPair<QString, qint64> &b) { return a.second > b.second; });
+        files_to_index = files.size();
+        int threads_count = std::max(4u, std::thread::hardware_concurrency() * 2);
+        QVector<QVector<QString>> groups(threads_count);
+        for (int i = 0; i < files_to_index; i++) {
+            int ind = (i / files_to_index % 2) * files_to_index +
+                      (1 - 2 * (i / files_to_index % 2)) * (i % threads_count - i / files_to_index % 2);
+            groups[ind].push_back(files[i].first);
+        }
+
+        for (int i = 0; i < threads_count; ++i) {
+            auto *trigrams_extractor_thread = new QThread();
+            auto *trigrams_extractor = new TrigramsExtracter(QThread::currentThread(), groups[i]);
+            trigrams_extractor->moveToThread(trigrams_extractor_thread);
+            connect(trigrams_extractor_thread, SIGNAL(started()), trigrams_extractor, SLOT(extractTrigrams()));
+            connect(trigrams_extractor, SIGNAL(filesProcessed(int)), this, SLOT(updateBar(int)));
+
+            qRegisterMetaType<QVector<QPair<QString, QSet<uint64_t>>>>("QVector<QPair<QString, QSet<uint64_t>>>");
+
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)),
+                    trigrams_extractor_thread, SLOT(quit()));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), this,
+                    SLOT(updateData(QVector<QPair<QString, QSet<uint64_t>>>)));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)),
+                    trigrams_extractor, SLOT(deleteLater()));
+            connect(trigrams_extractor_thread, SIGNAL(finished()), trigrams_extractor_thread, SLOT(deleteLater()));
+            trigrams_extractor_thread->start();
+        }
     }
 }
 
-void FilesUtil::getFileTrigrams(QString &filepath, QSet<uint64_t> &trigrams) {
-    QFile file(filepath);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        char buf[BUFFER_SIZE];
-        std::string buffer;
-        while (file.read(buf, BUFFER_SIZE) > 0 && buffer.append(buf).size() >= static_cast<size_t >(TRIGRAM_SIZE)) {
-            addStringTrigrams(trigrams, buffer);
-            buffer = buffer.substr(buffer.size() - (TRIGRAM_SIZE - 1), buffer.size());
-        }
-    }
-    file.close();
+void FilesUtil::updateBar(int value) {
+    emit filesIndexed(value);
 }
 
 void FilesUtil::addStringTrigrams(QSet<uint64_t> &trigrams, std::string &str) {
@@ -83,14 +87,14 @@ void FilesUtil::addStringTrigrams(QSet<uint64_t> &trigrams, std::string &str) {
     }
 }
 
-QVector<QString> FilesUtil::findFilesWith(Index &index, QString str) {
+void FilesUtil::findFilesWith(QString str) {
     QVector<QString> containsAllTrigrams;
     if (str.isEmpty())
-        return containsAllTrigrams;
+        emit filesWithStrFound(QVector<QString>{});
     QSet<uint64_t> trigrams{};
     std::string std_str = str.toStdString();
     (addStringTrigrams(trigrams, std_str));
-    for (auto it = index.files_info.begin(); it != index.files_info.end(); it++) {
+    for (auto it = index_->files_info.begin(); it != index_->files_info.end(); it++) {
         bool contains = true;
         for (auto &tri : trigrams) {
             if ((it.value().find(tri) == it.value().end())) {
@@ -102,32 +106,31 @@ QVector<QString> FilesUtil::findFilesWith(Index &index, QString str) {
             containsAllTrigrams.push_back(it.key());
         }
     }
-    QVector<QString> filesWithStr;
-    for (auto &file : containsAllTrigrams) {
-        if (containsString(file, str))
-            filesWithStr.push_back(file);
+    files_to_check = containsAllTrigrams.size();
+    int threads_count = std::max(4u, std::thread::hardware_concurrency() * 2);
+    QVector<QVector<QString>> groups(threads_count);
+    for (int i = 0; i < files_to_check; i++) {
+        groups[i % threads_count].push_back(containsAllTrigrams[i]);
     }
-    return filesWithStr;
+
+    for (int i = 0; i < threads_count; ++i) {
+        auto *string_searcher_thread = new QThread();
+        auto *string_searcher = new StringSearcher();
+        string_searcher->moveToThread(string_searcher_thread);
+
+        qRegisterMetaType<QVector<QString>>("QVector<QString>");
+
+        connect(this, SIGNAL(filesWithTrigrams(QVector<QString>, QString)), string_searcher, SLOT(searchString(QVector<QString>, QString)));
+        connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)),string_searcher_thread, SLOT(quit()));
+        connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)), this, SLOT(updateFilesWithStr(QVector<QString>, int)));
+        connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)), string_searcher, SLOT(deleteLater()));
+        connect(string_searcher_thread, SIGNAL(finished()), string_searcher_thread, SLOT(deleteLater()));
+
+        string_searcher_thread->start();
+        emit filesWithTrigrams(groups[i], str);
+    }
 }
 
-bool FilesUtil::containsString(QString &absoluteFilepath, QString &str) {
-    QFile file(absoluteFilepath);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream stream(&file);
-        QString buffer;
-        while (buffer.append(stream.read(BUFFER_SIZE)).size() >= str.size()) {
-            for (int i = 0; i <= BUFFER_SIZE - str.size(); ++i) {
-                int j = 0;
-                for (; str[j] == buffer[i + j] && j < str.size(); j++);
-                if (j == str.size())
-                    return true;
-            }
-            buffer = buffer.mid(buffer.size() - (str.size() - 1), (str.size() - 1));
-        }
-    }
-    file.close();
-    return false;
-}
 
 void FilesUtil::removeDirectory(Index &index, QString dir) {
     int a = 0;
@@ -137,8 +140,25 @@ void FilesUtil::removeDirectory(Index &index, QString dir) {
         }
         index.dirs_info.remove(dir);
     }
-//    std::cout <<"files_removed "  << a << "\n";
-//    std::cout <<"files_info_size "  << files_info.size() << "\n";
-//    std::cout <<"dir_info size "  << dirs_info.size() << "\n";
 }
 
+void FilesUtil::updateData(QVector<QPair<QString, QSet<uint64_t>>> data) {
+    cur_count += data.size();
+    auto &dir_info = *index_->dirs_info.find(dir_);
+    for (auto it = data.begin(); it != data.end(); ++it) {
+        dir_info.insert(it->first);
+        index_->files_info.insert(it->first, it->second);
+    }
+    if (cur_count == files_to_index) {
+        emit indexingEnds(QDialog::Accepted);
+    }
+}
+
+void FilesUtil::updateFilesWithStr(QVector<QString> files, int files_checked) {
+    for (auto &file: files) {
+        filesWithStr.push_back(file);
+    }
+    cur_count += files_checked;
+    if (cur_count == files_to_check)
+        emit filesWithStrFound(filesWithStr);
+}

@@ -20,7 +20,7 @@ void IndexingDialog::stopSearch() {
 }
 
 void IndexingDialog::updateBar(int value) {
-    ui->progressBar->setValue(value);
+    ui->progressBar->setValue(ui->progressBar->value() + value);
 }
 
 

@@ -7,6 +7,7 @@
 #include <QtCore/QThread>
 #include <QMetaType>
 #include <QtGui/QDesktopServices>
+#include <chrono>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -16,7 +17,9 @@
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
-        index(new Index()) {
+        index(new Index()),
+        begin(std::chrono::time_point<std::chrono::steady_clock>()),
+        end(std::chrono::time_point<std::chrono::steady_clock>()){
     ui->setupUi(this);
     ui->removeFromListButton->setEnabled(false);
     ui->directoryList->header()->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -88,6 +91,8 @@ void MainWindow::directoryListItemSelectionChanged() {
 }
 
 void MainWindow::addDirectory(QString dir) {
+    begin = std::chrono::steady_clock::now();
+
     auto *files_util_thread = new QThread();
     auto *files_util = new FilesUtil(index, dir);
     auto *indexing_dialog = new IndexingDialog(files_util_thread, this);
@@ -105,14 +110,34 @@ void MainWindow::addDirectory(QString dir) {
     }
     delete indexing_dialog;
 
-
-
-//    FilesUtil().addDirectory(index, dir);
+    end = std::chrono::steady_clock::now();
+    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+    ui->statusBar->showMessage("The time: " + QString::number(elapsed_ms.count()) + " ms\n");
 }
 
 void MainWindow::find() {
+    begin = std::chrono::steady_clock::now();
+
+    auto *files_util_thread = new QThread();
+    auto *files_util = new FilesUtil(index);
+    files_util->moveToThread(files_util_thread);
+    connect(this, SIGNAL(findFilesWithStr(QString)), files_util, SLOT(findFilesWith(QString)));
+    connect(files_util, SIGNAL(filesWithStrFound(QVector<QString>)), files_util_thread, SLOT(quit()));
+    connect(files_util, SIGNAL(filesWithStrFound(QVector<QString>)), files_util, SLOT(deleteLater()));
+    connect(files_util, SIGNAL(filesWithStrFound(QVector<QString>)), this, SLOT(displayFilesWithStr(QVector<QString>)));
+    connect(files_util_thread, SIGNAL(finished()), files_util_thread, SLOT(deleteLater()));
+    files_util_thread->start();
+
+    emit findFilesWithStr(ui->stringInput->text());
+}
+
+void MainWindow::openFile(QTreeWidgetItem *item) {
+    if (item != nullptr)
+        QDesktopServices::openUrl(QUrl::fromLocalFile(item->text(0)));
+}
+
+void MainWindow::displayFilesWithStr(QVector<QString> files) {
     ui->filesWithStr->clear();
-    QVector<QString> files = FilesUtil().findFilesWith(*index, ui->stringInput->text());
     for (auto &s : files) {
         auto *item = new QTreeWidgetItem(ui->filesWithStr);
         ui->filesWithStr->addTopLevelItem(item);
@@ -120,9 +145,7 @@ void MainWindow::find() {
         item->setText(0, file.absolutePath());
         item->setText(1, file.absolutePath());
     }
-}
-
-void MainWindow::openFile(QTreeWidgetItem *item) {
-    if (item != nullptr)
-        QDesktopServices::openUrl(QUrl::fromLocalFile(item->text(0)));
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+    ui->statusBar->showMessage("The time: " + QString::number(elapsed_ms.count()) + " ms\n");
 }

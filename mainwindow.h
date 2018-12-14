@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QtWidgets/QTreeWidgetItem>
 #include "files_util/FilesUtil.h"
-
+#include <chrono>
 
 
 namespace Ui {
@@ -20,6 +20,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+signals:
+    void findFilesWithStr(QString);
+
 private slots:
     void inputDirectoryNameTextChanged(const QString &arg1);
     void chooseDir();
@@ -29,10 +32,13 @@ private slots:
     void addDirectory(QString);
     void find();
     void openFile(QTreeWidgetItem*);
+    void displayFilesWithStr(QVector<QString>);
 private:
     //Hz
     Ui::MainWindow *ui;
     Index* index;
+    std::chrono::time_point<std::chrono::steady_clock> begin;
+    std::chrono::time_point<std::chrono::steady_clock> end;
 //    FilesUtil files_util;
 };
 
