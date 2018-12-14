@@ -14,7 +14,7 @@ class StringSearcher: QObject {
 friend class FilesUtil;
 Q_OBJECT
 private:
-    StringSearcher(QObject* parent = nullptr): QObject(parent){};
+    StringSearcher(QVector<QString> files, QString str, QObject* parent = nullptr): QObject(parent), files(files), str(str){};
 
     void addStringTrigrams(QSet<uint64_t>&, std::string&);
     bool containsString(QString &absoluteFilepath, QString& str);
@@ -23,9 +23,11 @@ signals:
     void searchEnds(QVector<QString>, int);
 
 private slots:
-    void searchString(QVector<QString>, QString);
+    void searchString();
 
 private:
+    QVector<QString> files;
+    QString str;
 };
 
 

@@ -87,13 +87,13 @@ void FilesUtil::addStringTrigrams(QSet<uint64_t> &trigrams, std::string &str) {
     }
 }
 
-void FilesUtil::findFilesWith(QString str) {
+void FilesUtil::findFilesWith() {
     QVector<QString> containsAllTrigrams;
-    if (str.isEmpty())
+    if (dir_.isEmpty())
         emit filesWithStrFound(QVector<QString>{});
     QSet<uint64_t> trigrams{};
-    std::string std_str = str.toStdString();
-    (addStringTrigrams(trigrams, std_str));
+    std::string std_str = dir_.toStdString();
+    addStringTrigrams(trigrams, std_str);
     for (auto it = index_->files_info.begin(); it != index_->files_info.end(); it++) {
         bool contains = true;
         for (auto &tri : trigrams) {
@@ -109,25 +109,30 @@ void FilesUtil::findFilesWith(QString str) {
     files_to_check = containsAllTrigrams.size();
     int threads_count = std::max(4u, std::thread::hardware_concurrency() * 2);
     QVector<QVector<QString>> groups(threads_count);
+    std::cout <<"#" <<cur_count << " " << files_to_check << "\n";
     for (int i = 0; i < files_to_check; i++) {
         groups[i % threads_count].push_back(containsAllTrigrams[i]);
     }
-
+    int d=0;
+    for (int i = 0; i < threads_count; ++i) {
+        d +=groups[i].size();
+    }
+    std::cout << d << "\n";
+    std::cout <<"#" <<cur_count << " " << files_to_check << "\n";
     for (int i = 0; i < threads_count; ++i) {
         auto *string_searcher_thread = new QThread();
-        auto *string_searcher = new StringSearcher();
+        auto *string_searcher = new StringSearcher(groups[i], dir_);
         string_searcher->moveToThread(string_searcher_thread);
 
         qRegisterMetaType<QVector<QString>>("QVector<QString>");
 
-        connect(this, SIGNAL(filesWithTrigrams(QVector<QString>, QString)), string_searcher, SLOT(searchString(QVector<QString>, QString)));
-        connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)),string_searcher_thread, SLOT(quit()));
-        connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)), this, SLOT(updateFilesWithStr(QVector<QString>, int)));
+        connect(string_searcher_thread, SIGNAL(started()), string_searcher, SLOT(searchString()));
+        connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)), string_searcher_thread, SLOT(quit()));
         connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)), string_searcher, SLOT(deleteLater()));
         connect(string_searcher_thread, SIGNAL(finished()), string_searcher_thread, SLOT(deleteLater()));
+        connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)), this, SLOT(updateFilesWithStr(QVector<QString>, int)));
 
         string_searcher_thread->start();
-        emit filesWithTrigrams(groups[i], str);
     }
 }
 
@@ -140,6 +145,7 @@ void FilesUtil::removeDirectory(Index &index, QString dir) {
         }
         index.dirs_info.remove(dir);
     }
+    std::cout << a << "\n";
 }
 
 void FilesUtil::updateData(QVector<QPair<QString, QSet<uint64_t>>> data) {
@@ -159,6 +165,7 @@ void FilesUtil::updateFilesWithStr(QVector<QString> files, int files_checked) {
         filesWithStr.push_back(file);
     }
     cur_count += files_checked;
+    std::cout << cur_count << " " << files_to_check << "\n";
     if (cur_count == files_to_check)
         emit filesWithStrFound(filesWithStr);
 }

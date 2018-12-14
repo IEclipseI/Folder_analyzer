@@ -119,16 +119,14 @@ void MainWindow::find() {
     begin = std::chrono::steady_clock::now();
 
     auto *files_util_thread = new QThread();
-    auto *files_util = new FilesUtil(index);
+    auto *files_util = new FilesUtil(index, ui->stringInput->text());
     files_util->moveToThread(files_util_thread);
-    connect(this, SIGNAL(findFilesWithStr(QString)), files_util, SLOT(findFilesWith(QString)));
+    connect(files_util_thread, SIGNAL(started()), files_util, SLOT(findFilesWith()));
     connect(files_util, SIGNAL(filesWithStrFound(QVector<QString>)), files_util_thread, SLOT(quit()));
     connect(files_util, SIGNAL(filesWithStrFound(QVector<QString>)), files_util, SLOT(deleteLater()));
     connect(files_util, SIGNAL(filesWithStrFound(QVector<QString>)), this, SLOT(displayFilesWithStr(QVector<QString>)));
     connect(files_util_thread, SIGNAL(finished()), files_util_thread, SLOT(deleteLater()));
     files_util_thread->start();
-
-    emit findFilesWithStr(ui->stringInput->text());
 }
 
 void MainWindow::openFile(QTreeWidgetItem *item) {

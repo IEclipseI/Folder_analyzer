@@ -42,7 +42,7 @@ public slots:
     void updateBar(int);
     void updateData(QVector<QPair<QString, QSet<uint64_t>>>);
     void updateFilesWithStr(QVector<QString>, int);
-    void findFilesWith(QString);
+    void findFilesWith();
 
 signals:
     void indexingEnds(int);

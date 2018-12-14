@@ -8,7 +8,7 @@
 #include <QtCore/QTextStream>
 #include "StringSearcher.h"
 
-void StringSearcher::searchString(QVector<QString> files, QString str) {
+void StringSearcher::searchString() {
     if (str.isEmpty()) {
         emit searchEnds(QVector<QString>{}, files.size());
     }
@@ -17,6 +17,7 @@ void StringSearcher::searchString(QVector<QString> files, QString str) {
         if (containsString(file, str))
             filesWithStr.push_back(file);
     }
+    std::cout <<" " <<files.size() <<" " ;
     emit searchEnds(filesWithStr, files.size());
 }
 
