@@ -17,7 +17,6 @@ void TrigramsExtracter::extractTrigrams(){
     QVector<QPair<QString, QSet<uint64_t>>> data;
     try {
         for (auto &filepath : files) {
-            resolveInterruptionRequest();
             data.push_back(QPair<QString, QSet<uint64_t>>(filepath, QSet<uint64_t>{}));
             QSet<uint64_t> &s = data[data.size() - 1].second;
             getFileTrigrams(filepath, s);
@@ -41,6 +40,7 @@ void TrigramsExtracter::getFileTrigrams(QString &filepath, QSet<uint64_t> &trigr
 //            if (it == 1)
 //                if (isBinary(buffer))
 //                    return;
+            resolveInterruptionRequest();
             addStringTrigrams(trigrams, buffer);
             buffer = buffer.substr(buffer.size() - (TRIGRAM_SIZE - 1), buffer.size());
         }
@@ -53,7 +53,7 @@ void TrigramsExtracter::addStringTrigrams(QSet<uint64_t> &trigrams, std::string 
         uint64_t hash = 0;
         for (int j = 0; j < TRIGRAM_SIZE; ++j) {
             hash = (hash << 8);
-            hash += reinterpret_cast<unsigned char &>(str[i + j]);
+            hash += static_cast<unsigned char>(str[i + j]);
         }
         trigrams.insert(hash);
     }
