@@ -36,18 +36,18 @@ bool StringSearcher::containsString(QString &absoluteFilepath, QString &str) {
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream stream(&file);
         QString buffer;
-        auto boor = std::boyer_moore_horspool_searcher(
-                str.begin(), str.end(), [](const QChar &ch) { return ch.unicode(); });
+//        auto boor = std::boyer_moore_horspool_searcher(
+//                str.begin(), str.end(), [](const QChar &ch) { return ch.unicode(); });
         while (buffer.append(stream.read(BUFFER_SIZE)).size() >= str.size()) {
-            auto it = std::search(buffer.begin(), buffer.end(), boor);
-            if (it != buffer.end())
-                return true;
-//            for (int i = 0; i <= BUFFER_SIZE - str.size(); ++i) {         //BRUTE_FORCE
-//                int j = 0;
-//                for (; str[j] == buffer[i + j] && j < str.size(); j++);
-//                if (j == str.size())
-//                    return true;
-//            }
+//            auto it = std::search(buffer.begin(), buffer.end(), boor);
+//            if (it != buffer.end())
+//                return true;
+            for (int i = 0; i <= BUFFER_SIZE - str.size(); ++i) {         //BRUTE_FORCE
+                int j = 0;
+                for (; str[j] == buffer[i + j] && j < str.size(); j++);
+                if (j == str.size())
+                    return true;
+            }
             buffer = buffer.mid(buffer.size() - (str.size() - 1), (str.size() - 1));
         }
     }

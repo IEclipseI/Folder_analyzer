@@ -17,7 +17,7 @@
 
 namespace {
     const int BUFFER_SIZE = 1 << 17;
-    const int TRIGRAM_SIZE = 4;
+    const int TRIGRAM_SIZE = 3;
 }
 
 class FilesUtil;

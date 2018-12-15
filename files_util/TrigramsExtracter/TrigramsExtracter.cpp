@@ -31,6 +31,7 @@ void TrigramsExtracter::extractTrigrams(){
 
 void TrigramsExtracter::getFileTrigrams(QString &filepath, QSet<uint64_t> &trigrams) {
     QFile file(filepath);
+
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         char buf[BUFFER_SIZE];
         std::string buffer;
