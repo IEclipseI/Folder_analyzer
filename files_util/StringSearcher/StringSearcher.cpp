@@ -17,7 +17,6 @@ void StringSearcher::searchString() {
         if (containsString(file, str))
             filesWithStr.push_back(file);
     }
-    std::cout <<" " <<files.size() <<" " ;
     emit searchEnds(filesWithStr, files.size());
 }
 

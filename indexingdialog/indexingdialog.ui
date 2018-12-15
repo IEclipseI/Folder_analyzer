@@ -33,7 +33,7 @@
    <item row="1" column="1">
     <widget class="QPushButton" name="stopSearchButton">
      <property name="text">
-      <string>Stop addDirectory</string>
+      <string>Stop indexing</string>
      </property>
     </widget>
    </item>

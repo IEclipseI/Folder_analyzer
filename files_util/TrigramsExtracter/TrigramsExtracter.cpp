@@ -26,7 +26,7 @@ void TrigramsExtracter::extractTrigrams(){
     } catch (...) {
         //interraption requested
     }
-    emit extractingEnds(data);
+    emit extractingEnds(data, files.size());
 }
 
 void TrigramsExtracter::getFileTrigrams(QString &filepath, QSet<uint64_t> &trigrams) {
@@ -34,7 +34,12 @@ void TrigramsExtracter::getFileTrigrams(QString &filepath, QSet<uint64_t> &trigr
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         char buf[BUFFER_SIZE];
         std::string buffer;
+//        int it = 0;
         while (file.read(buf, BUFFER_SIZE) > 0 && buffer.append(buf, BUFFER_SIZE).size() >= static_cast<size_t >(TRIGRAM_SIZE)) {
+//            it++;
+//            if (it == 1)
+//                if (isBinary(buffer))
+//                    return;
             addStringTrigrams(trigrams, buffer);
             buffer = buffer.substr(buffer.size() - (TRIGRAM_SIZE - 1), buffer.size());
         }
@@ -51,4 +56,12 @@ void TrigramsExtracter::addStringTrigrams(QSet<uint64_t> &trigrams, std::string 
         }
         trigrams.insert(hash);
     }
+}
+
+bool TrigramsExtracter::isBinary(const std::string &str) {
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (str[i] == '\0')
+            return true;
+    }
+    return true;
 }

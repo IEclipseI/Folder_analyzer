@@ -34,12 +34,10 @@ private slots:
     void openFile(QTreeWidgetItem*);
     void displayFilesWithStr(QVector<QString>);
 private:
-    //Hz
     Ui::MainWindow *ui;
     Index* index;
     std::chrono::time_point<std::chrono::steady_clock> begin;
     std::chrono::time_point<std::chrono::steady_clock> end;
-//    FilesUtil files_util;
 };
 
 #endif // MAINWINDOW_H

@@ -17,7 +17,7 @@
 
 namespace {
     const int BUFFER_SIZE = 1 << 17;
-    const int TRIGRAM_SIZE = 6;
+    const int TRIGRAM_SIZE = 4;
 }
 
 class FilesUtil;
@@ -40,7 +40,7 @@ public:
 public slots:
     void addDirectory();
     void updateBar(int);
-    void updateData(QVector<QPair<QString, QSet<uint64_t>>>);
+    void updateData(QVector<QPair<QString, QSet<uint64_t>>>, int);
     void updateFilesWithStr(QVector<QString>, int);
     void findFilesWith();
 
@@ -48,7 +48,6 @@ signals:
     void indexingEnds(int);
     void filesIndexed(int);
     void filesToIndexCounted(int);
-    void filesWithTrigrams(QVector<QString>, QString);
     void filesWithStrFound(QVector<QString>);
 
 private:
