@@ -60,11 +60,11 @@ void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
 
             qRegisterMetaType<QVector<QPair<QString, QSet<uint64_t>>>>("QVector<QPair<QString, QSet<uint64_t>>>");
 
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>, int)),
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)),
                     trigrams_extractor_thread, SLOT(quit()));
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>, int)), this,
-                    SLOT(updateData(QVector<QPair<QString, QSet<uint64_t>>>, int)));
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>, int)),
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), this,
+                    SLOT(updateData(QVector<QPair<QString, QSet<uint64_t>>>)));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)),
                     trigrams_extractor, SLOT(deleteLater()));
             connect(trigrams_extractor_thread, SIGNAL(finished()), trigrams_extractor_thread, SLOT(deleteLater()));
             trigrams_extractor_thread->start();
@@ -139,8 +139,8 @@ void FilesUtil::removeDirectory(Index &index, QString dir) {
     }
 }
 
-void FilesUtil::updateData(QVector<QPair<QString, QSet<uint64_t>>> data, int files_indexed) {
-    cur_count += files_indexed;
+void FilesUtil::updateData(QVector<QPair<QString, QSet<uint64_t>>> data) {
+    cur_count += data.size();
     auto &dir_info = *index_->dirs_info.find(dir_);
     for (auto it = data.begin(); it != data.end(); ++it) {
         dir_info.insert(it->first);

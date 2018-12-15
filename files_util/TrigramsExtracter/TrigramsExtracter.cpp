@@ -26,7 +26,7 @@ void TrigramsExtracter::extractTrigrams(){
     } catch (...) {
         //interraption requested
     }
-    emit extractingEnds(data, files.size());
+    emit extractingEnds(data);
 }
 
 void TrigramsExtracter::getFileTrigrams(QString &filepath, QSet<uint64_t> &trigrams) {

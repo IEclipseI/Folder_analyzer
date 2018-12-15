@@ -40,7 +40,7 @@ public:
 public slots:
     void addDirectory();
     void updateBar(int);
-    void updateData(QVector<QPair<QString, QSet<uint64_t>>>, int);
+    void updateData(QVector<QPair<QString, QSet<uint64_t>>>);
     void updateFilesWithStr(QVector<QString>, int);
     void findFilesWith();
 

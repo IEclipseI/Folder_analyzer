@@ -21,7 +21,7 @@ private:
     void addStringTrigrams(QSet<uint64_t> &, std::string &);
     void resolveInterruptionRequest();
 signals:
-    void extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>, int);
+    void extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>);
     void filesProcessed(int);
 
 private slots:
