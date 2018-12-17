@@ -1,3 +1,4 @@
+#include <iostream>
 #include "indexingdialog.h"
 #include "ui_indexingdialog.h"
 
@@ -21,6 +22,7 @@ void IndexingDialog::stopSearch() {
 
 void IndexingDialog::updateBar(int value) {
     ui->progressBar->setValue(ui->progressBar->value() + value);
+//    std::cout << ui->progressBar->value() + value << "\n";
 }
 
 

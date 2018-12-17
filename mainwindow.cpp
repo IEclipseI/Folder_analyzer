@@ -24,8 +24,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->removeFromListButton->setEnabled(false);
     ui->directoryList->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->directoryList->header()->setSectionResizeMode(1, QHeaderView::Stretch);
-    ui->filesWithStr->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    ui->filesWithStr->header()->setSectionResizeMode(1, QHeaderView::Stretch);
+    ui->filesWithStr->header()->setSectionResizeMode(0, QHeaderView::Interactive);
+    ui->filesWithStr->header()->setSectionResizeMode(1, QHeaderView::Interactive);
     connect(ui->inputDirectoryName, SIGNAL(textChanged(
                                                    const QString&)), this, SLOT(inputDirectoryNameTextChanged(
                                                                                         const QString &)));

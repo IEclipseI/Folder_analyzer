@@ -2,7 +2,7 @@
 // Created by roman on 14.12.18.
 //
 
-#include <QtCore/QSet>
+#include <QSet>
 #include <functional>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>

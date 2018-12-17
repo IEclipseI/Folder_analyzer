@@ -9,6 +9,7 @@
 #include <chrono>
 #include <unordered_set>
 #include <QHash>
+#include <QSet>
 #include <QtWidgets/QDialog>
 #include <QtCore/QThread>
 #include "TrigramsExtracter/TrigramsExtracter.h"
@@ -30,7 +31,7 @@ void FilesUtil::addDirectory() {
 
 void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
     if (!index.dirs_info.contains(directory)) {
-        index.dirs_info.insert(directory, QSet<QString>{});
+        index.dirs_info.insert(directory, QSet<QString>());
         QDirIterator it(directory, QDir::Hidden | QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
         QVector<QPair<QString, qint64>> files;
         while (it.hasNext()) {
@@ -39,34 +40,31 @@ void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
                 files.pop_back();
         }
         emit filesToIndexCounted(files.size());
-
+        std::cout << "files " <<files.size()<< "\n";
         std::sort(files.begin(), files.end(),
                   [](const QPair<QString, qint64> &a, const QPair<QString, qint64> &b) { return a.second > b.second; });
         files_to_index = files.size();
-        int threads_count = std::max(4u, std::thread::hardware_concurrency() * 2);
+        int threads_count = std::max(4u, std::thread::hardware_concurrency());
         QVector<QVector<QString>> groups(threads_count);
         for (int i = 0; i < files_to_index; i++) {
             int ind = (i / files_to_index % 2) * files_to_index +
                       (1 - 2 * (i / files_to_index % 2)) * (i % threads_count - i / files_to_index % 2);
-            groups[ind].push_back(files[i].first);
+            groups[i % threads_count].push_back(files[i].first);
         }
 
         for (int i = 0; i < threads_count; ++i) {
             auto *trigrams_extractor_thread = new QThread();
             auto *trigrams_extractor = new TrigramsExtracter(QThread::currentThread(), groups[i]);
             trigrams_extractor->moveToThread(trigrams_extractor_thread);
+
             connect(trigrams_extractor_thread, SIGNAL(started()), trigrams_extractor, SLOT(extractTrigrams()));
             connect(trigrams_extractor, SIGNAL(filesProcessed(int)), this, SLOT(updateBar(int)));
-
             qRegisterMetaType<QVector<QPair<QString, QSet<uint64_t>>>>("QVector<QPair<QString, QSet<uint64_t>>>");
-
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)),
-                    trigrams_extractor_thread, SLOT(quit()));
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), this,
-                    SLOT(updateData(QVector<QPair<QString, QSet<uint64_t>>>)));
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)),
-                    trigrams_extractor, SLOT(deleteLater()));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), trigrams_extractor_thread, SLOT(quit()));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), this, SLOT(updateData(QVector<QPair<QString, QSet<uint64_t>>>)));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), trigrams_extractor, SLOT(deleteLater()));
             connect(trigrams_extractor_thread, SIGNAL(finished()), trigrams_extractor_thread, SLOT(deleteLater()));
+
             trigrams_extractor_thread->start();
         }
     }
@@ -156,6 +154,7 @@ void FilesUtil::updateFilesWithStr(QVector<QString> files, int files_checked) {
         filesWithStr.push_back(file);
     }
     cur_count += files_checked;
-    if (cur_count == files_to_check)
+    if (cur_count == files_to_check){
         emit filesWithStrFound(filesWithStr);
+    }
 }

@@ -3,22 +3,22 @@ project(folder_analyzer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -o3")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined")
 
 #-fsanitize=address
 #--coverage
-set(CMAKE_PREFIX_PATH "/home/roman/Qt/5.11.2/gcc_64/lib")
+set(CMAKE_PREFIX_PATH "/home/roman/Qt/5.12.0/gcc_64/lib")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5Core REQUIRED)
-find_package(Qt5Widgets REQUIRED)
-#find_package(OpenSSL REQUIRED)
+    find_package(Qt5Core REQUIRED)
+    find_package(Qt5Widgets REQUIRED)
+    #find_package(OpenSSL REQUIRED)
 
-include_directories(${Qt5Widgets_INCLUDE_DIRS})
-include_directories(${Qt5Core_INCLUDE_DIRS})
+    include_directories(${Qt5Widgets_INCLUDE_DIRS})
+    include_directories(${Qt5Core_INCLUDE_DIRS})
 #include_directories(${Boost_INCLUDE_DIR})
 
 

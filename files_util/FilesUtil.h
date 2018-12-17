@@ -8,15 +8,16 @@
 
 #include <QObject>
 #include <QtCore/QHash>
-#include <QtCore/QSet>
+#include <unordered_set>
 #include <QtCore/QVector>
 #include <unordered_set>
 #include <iostream>
 #include "TrigramsExtracter/TrigramsExtracter.h"
 
 
-namespace {
-    const int BUFFER_SIZE = 1 << 17;
+
+namespace  {
+    const int BUFFER_SIZE = 1 << 13;
     const int TRIGRAM_SIZE = 3;
 }
 
@@ -27,6 +28,7 @@ class Index {
     QHash<QString, QSet<uint64_t>> files_info;
     QHash<QString, QSet<QString>> dirs_info;
 };
+
 
 
 class FilesUtil: public QObject {
@@ -60,7 +62,8 @@ private:
     int cur_count = 0;
     int files_to_check = 0;
     QVector<QString> filesWithStr;
-//    QHash<QString, QSet<uint64_t>> files_info;
+
+    //    QHash<QString, QSet<uint64_t>> files_info;
 //    QHash<QString, QSet<QString>> dirs_info;
      //😺 qwerty qwerty
 };

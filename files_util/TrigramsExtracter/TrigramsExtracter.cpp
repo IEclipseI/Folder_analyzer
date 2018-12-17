@@ -6,14 +6,15 @@
 #include <QtCore/QFile>
 #include "TrigramsExtracter.h"
 #include <iostream>
-
+#include <QSet>
+#include <chrono>
 
 void TrigramsExtracter::resolveInterruptionRequest() {
     if (main_thread->isInterruptionRequested())
         throw std::exception();
 }
 
-void TrigramsExtracter::extractTrigrams(){
+void TrigramsExtracter::extractTrigrams() {
     QVector<QPair<QString, QSet<uint64_t>>> data;
     try {
         for (auto &filepath : files) {
@@ -30,39 +31,32 @@ void TrigramsExtracter::extractTrigrams(){
 
 void TrigramsExtracter::getFileTrigrams(QString &filepath, QSet<uint64_t> &trigrams) {
     QFile file(filepath);
-
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        char buf[BUFFER_SIZE];
-        std::string buffer;
-//        int it = 0;
-        while (file.read(buf, BUFFER_SIZE) > 0 && buffer.append(buf, BUFFER_SIZE).size() >= static_cast<size_t >(TRIGRAM_SIZE)) {
-//            it++;
-//            if (it == 1)
-//                if (isBinary(buffer))
-//                    return;
-            resolveInterruptionRequest();
-            addStringTrigrams(trigrams, buffer);
-            buffer = buffer.substr(buffer.size() - (TRIGRAM_SIZE - 1), buffer.size());
-        }
+        char buf[BUFFER_SIZE + TRIGRAM_SIZE - 1];
+        qint64 read = file.read(buf, BUFFER_SIZE);
+        if (read >= TRIGRAM_SIZE)
+            do {
+                resolveInterruptionRequest();
+                addStringTrigrams(trigrams, buf, read);
+                if (trigrams.size() > 80000) {
+                    trigrams.clear();
+                    return;
+                }
+                for (int i = 1; i < TRIGRAM_SIZE; ++i) {
+                    buf[i - 1] = buf[BUFFER_SIZE - TRIGRAM_SIZE + i];
+                }
+            } while ((read = file.read(buf + TRIGRAM_SIZE - 1, BUFFER_SIZE)) > 1);
     }
     file.close();
 }
 
-void TrigramsExtracter::addStringTrigrams(QSet<uint64_t> &trigrams, std::string &str) {
-    for (ptrdiff_t i = 0; i <= static_cast<ptrdiff_t>(str.size()) - TRIGRAM_SIZE; ++i) {
+void TrigramsExtracter::addStringTrigrams(QSet<uint64_t> &trigrams, const char *buffer, qint64 size) {
+    for (ptrdiff_t i = 0; i <= static_cast<ptrdiff_t>(size) - TRIGRAM_SIZE; ++i) {
         uint64_t hash = 0;
         for (int j = 0; j < TRIGRAM_SIZE; ++j) {
             hash = (hash << 8);
-            hash += static_cast<unsigned char>(str[i + j]);
+            hash += static_cast<unsigned char>(buffer[i + j]);
         }
         trigrams.insert(hash);
     }
-}
-
-bool TrigramsExtracter::isBinary(const std::string &str) {
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (str[i] == '\0')
-            return true;
-    }
-    return true;
 }
