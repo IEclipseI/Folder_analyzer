@@ -8,6 +8,7 @@
 #include <QMetaType>
 #include <QtGui/QDesktopServices>
 #include <chrono>
+#include <QtCore/QTextStream>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -137,12 +138,16 @@ void MainWindow::openFile(QTreeWidgetItem *item) {
 
 void MainWindow::displayFilesWithStr(QVector<QString> files) {
     ui->filesWithStr->clear();
+    QFile prog_res("prog_res.txt");
+    prog_res.open(QIODevice::WriteOnly);
+    QTextStream str(&prog_res);
     for (auto &s : files) {
         auto *item = new QTreeWidgetItem(ui->filesWithStr);
         ui->filesWithStr->addTopLevelItem(item);
         QDir file(s);
         item->setText(0, file.dirName());
         item->setText(1, file.absolutePath());
+        str << file.absolutePath() << "\n";
     }
     auto end = std::chrono::steady_clock::now();
     auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);

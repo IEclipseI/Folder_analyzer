@@ -16,7 +16,7 @@ Q_OBJECT
 private:
     StringSearcher(QVector<QString> files, QString str, QObject* parent = nullptr): QObject(parent), files(files), str(str){};
 
-    void addStringTrigrams(QSet<uint64_t>&, std::string&);
+    void addStringTrigrams(TrigramsContainer&, std::string&);
     bool containsString(QString &absoluteFilepath, QString& str);
 
 signals:

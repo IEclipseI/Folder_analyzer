@@ -41,14 +41,14 @@ void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
         }
         emit filesToIndexCounted(files.size());
         std::cout << "files " <<files.size()<< "\n";
-        std::sort(files.begin(), files.end(),
-                  [](const QPair<QString, qint64> &a, const QPair<QString, qint64> &b) { return a.second > b.second; });
+//        std::sort(files.begin(), files.end(),
+//                  [](const QPair<QString, qint64> &a, const QPair<QString, qint64> &b) { return a.second > b.second; });
         files_to_index = files.size();
-        int threads_count = std::max(4u, std::thread::hardware_concurrency());
+        int threads_count = std::max(4u, std::thread::hardware_concurrency() * 4);
         QVector<QVector<QString>> groups(threads_count);
         for (int i = 0; i < files_to_index; i++) {
-            int ind = (i / files_to_index % 2) * files_to_index +
-                      (1 - 2 * (i / files_to_index % 2)) * (i % threads_count - i / files_to_index % 2);
+//            int ind = (i / files_to_index % 2) * files_to_index +
+//                      (1 - 2 * (i / files_to_index % 2)) * (i % threads_count - i / files_to_index % 2);
             groups[i % threads_count].push_back(files[i].first);
         }
 
@@ -59,10 +59,10 @@ void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
 
             connect(trigrams_extractor_thread, SIGNAL(started()), trigrams_extractor, SLOT(extractTrigrams()));
             connect(trigrams_extractor, SIGNAL(filesProcessed(int)), this, SLOT(updateBar(int)));
-            qRegisterMetaType<QVector<QPair<QString, QSet<uint64_t>>>>("QVector<QPair<QString, QSet<uint64_t>>>");
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), trigrams_extractor_thread, SLOT(quit()));
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), this, SLOT(updateData(QVector<QPair<QString, QSet<uint64_t>>>)));
-            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>)), trigrams_extractor, SLOT(deleteLater()));
+            qRegisterMetaType<QVector<QPair<QString, TrigramsContainer>>>("QVector<QPair<QString, TrigramsContainer>>");
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, TrigramsContainer>>)), trigrams_extractor_thread, SLOT(quit()));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, TrigramsContainer>>)), this, SLOT(updateData(QVector<QPair<QString, TrigramsContainer>>)));
+            connect(trigrams_extractor, SIGNAL(extractingEnds(QVector<QPair<QString, TrigramsContainer>>)), trigrams_extractor, SLOT(deleteLater()));
             connect(trigrams_extractor_thread, SIGNAL(finished()), trigrams_extractor_thread, SLOT(deleteLater()));
 
             trigrams_extractor_thread->start();
@@ -74,7 +74,7 @@ void FilesUtil::updateBar(int value) {
     emit filesIndexed(value);
 }
 
-void FilesUtil::addStringTrigrams(QSet<uint64_t> &trigrams, std::string &str) {
+void FilesUtil::addStringTrigrams(TrigramsContainer &trigrams, std::string &str) {
     for (ptrdiff_t i = 0; i <= static_cast<ptrdiff_t>(str.size()) - TRIGRAM_SIZE; ++i) {
         uint64_t hash = 0;
         for (int j = 0; j < TRIGRAM_SIZE; ++j) {
@@ -89,13 +89,13 @@ void FilesUtil::findFilesWith() {
     QVector<QString> containsAllTrigrams;
     if (dir_.isEmpty())
         emit filesWithStrFound(QVector<QString>{});
-    QSet<uint64_t> trigrams{};
+    TrigramsContainer trigrams{};
     std::string std_str = dir_.toStdString();
     addStringTrigrams(trigrams, std_str);
     for (auto it = index_->files_info.begin(); it != index_->files_info.end(); it++) {
         bool contains = true;
         for (auto &tri : trigrams) {
-            if ((it.value().find(tri) == it.value().end())) {
+            if (!(it.value().contains(tri))) {
                 contains = false;
                 break;
             }
@@ -137,7 +137,7 @@ void FilesUtil::removeDirectory(Index &index, QString dir) {
     }
 }
 
-void FilesUtil::updateData(QVector<QPair<QString, QSet<uint64_t>>> data) {
+void FilesUtil::updateData(QVector<QPair<QString, TrigramsContainer>> data) {
     cur_count += data.size();
     auto &dir_info = *index_->dirs_info.find(dir_);
     for (auto it = data.begin(); it != data.end(); ++it) {

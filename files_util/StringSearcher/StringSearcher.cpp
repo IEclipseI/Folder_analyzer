@@ -20,7 +20,7 @@ void StringSearcher::searchString() {
     emit searchEnds(filesWithStr, files.size());
 }
 
-void StringSearcher::addStringTrigrams(QSet<uint64_t> &trigrams, std::string &str) {
+void StringSearcher::addStringTrigrams(TrigramsContainer &trigrams, std::string &str) {
     for (ptrdiff_t i = 0; i <= static_cast<ptrdiff_t>(str.size()) - TRIGRAM_SIZE; ++i) {
         uint64_t hash = 0;
         for (int j = 0; j < TRIGRAM_SIZE; ++j) {

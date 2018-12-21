@@ -13,7 +13,7 @@
 #include <unordered_set>
 #include <iostream>
 #include "TrigramsExtracter/TrigramsExtracter.h"
-
+#include "TrigramsContainer/TrigramsContainer.h"
 
 
 namespace  {
@@ -25,7 +25,7 @@ class FilesUtil;
 
 class Index {
     friend  class FilesUtil;
-    QHash<QString, QSet<uint64_t>> files_info;
+    QHash<QString, TrigramsContainer> files_info;
     QHash<QString, QSet<QString>> dirs_info;
 };
 
@@ -42,7 +42,7 @@ public:
 public slots:
     void addDirectory();
     void updateBar(int);
-    void updateData(QVector<QPair<QString, QSet<uint64_t>>>);
+    void updateData(QVector<QPair<QString, TrigramsContainer>>);
     void updateFilesWithStr(QVector<QString>, int);
     void findFilesWith();
 
@@ -54,7 +54,7 @@ signals:
 
 private:
     void addDirectoryImpl(Index&, QString&);
-    void addStringTrigrams(QSet<uint64_t>&, std::string&);
+    void addStringTrigrams(TrigramsContainer&, std::string&);
 private:
     Index* index_;
     QString dir_;
@@ -63,7 +63,7 @@ private:
     int files_to_check = 0;
     QVector<QString> filesWithStr;
 
-    //    QHash<QString, QSet<uint64_t>> files_info;
+    //    QHash<QString, TrigramsContainer> files_info;
 //    QHash<QString, QSet<QString>> dirs_info;
      //😺 qwerty qwerty
 };

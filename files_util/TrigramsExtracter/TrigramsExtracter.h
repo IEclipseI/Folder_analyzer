@@ -8,6 +8,7 @@
 
 #include <QtCore/QObject>
 #include "../FilesUtil.h"
+#include "../TrigramsContainer/TrigramsContainer.h"
 
 //    extern const int BUFFER_SIZE;
 //    extern const int TRIGRAM_SIZE;
@@ -22,12 +23,12 @@ friend class FilesUtil;
 private:
     TrigramsExtracter(QThread* main_thread, QVector<QString> files, QObject* parent = nullptr): QObject(parent), main_thread(main_thread), files(files){};
 
-    void getFileTrigrams(QString&, QSet<uint64_t>&);
-    void addStringTrigrams(QSet<uint64_t> &, const char*, qint64 size);
+    void getFileTrigrams(QString&, TrigramsContainer&);
+    void addStringTrigrams(QSet<trigram> &, const char*, qint64 size);
 //    void addStringTrigrams(std::unordered_set<uint64_t>&, std::string &);
     void resolveInterruptionRequest();
 signals:
-    void extractingEnds(QVector<QPair<QString, QSet<uint64_t>>>);
+    void extractingEnds(QVector<QPair<QString, TrigramsContainer>>);
     void filesProcessed(int);
 
 private slots:
