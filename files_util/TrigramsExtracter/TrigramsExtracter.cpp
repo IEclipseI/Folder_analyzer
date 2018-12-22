@@ -35,14 +35,15 @@ void TrigramsExtracter::extractTrigrams() {
 
 void TrigramsExtracter::getFileTrigrams(QString &filepath, TrigramsContainer &trigrams) {
     QFile file(filepath);
-    std::cout << filepath.toStdString() << "\n";
+//    std::cout << filepath.toStdString() << "\n";
     QSet<trigram> tr;
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (file.open(QIODevice::ReadOnly)) {
         char buf[BUFFER_SIZE + TRIGRAM_SIZE - 1];
         qint64 read = file.read(buf, BUFFER_SIZE) - TRIGRAM_SIZE + 1;
         if (read >= 1)
             do {
                 read += 2;
+                std::cout << filepath.toStdString() << " " << read << "\n";
                 resolveInterruptionRequest();
                 addStringTrigrams(tr, buf, read);
                 if (tr.size() > 20000) {

@@ -14,7 +14,6 @@ class MainWindow;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-    friend class same_file_finder;
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
@@ -33,6 +32,7 @@ private slots:
     void find();
     void openFile(QTreeWidgetItem*);
     void displayFilesWithStr(QVector<QString>);
+    void liveSearch(const QString&);
 private:
     Ui::MainWindow *ui;
     Index* index;

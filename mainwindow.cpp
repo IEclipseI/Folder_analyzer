@@ -25,8 +25,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->removeFromListButton->setEnabled(false);
     ui->directoryList->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->directoryList->header()->setSectionResizeMode(1, QHeaderView::Stretch);
-    ui->filesWithStr->header()->setSectionResizeMode(0, QHeaderView::Interactive);
-    ui->filesWithStr->header()->setSectionResizeMode(1, QHeaderView::Interactive);
+    ui->filesWithStr->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    ui->filesWithStr->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    qRegisterMetaType<QVector<QString>>("QVector<QString>");
     connect(ui->inputDirectoryName, SIGNAL(textChanged(
                                                    const QString&)), this, SLOT(inputDirectoryNameTextChanged(
                                                                                         const QString &)));
@@ -36,6 +37,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->directoryList, SIGNAL(itemSelectionChanged()), this, SLOT(directoryListItemSelectionChanged()));
     connect(ui->filesWithStr, SIGNAL(itemDoubleClicked(QTreeWidgetItem * , int)), this,
             SLOT(openFile(QTreeWidgetItem * )));
+    connect(ui->stringInput, SIGNAL(textChanged(const QString&)), this, SLOT(liveSearch(const QString&)));
     int size = 400;
     ui->splitter->setSizes(QList<int>{ui->splitter->height() - size, size});
     connect(ui->find, SIGNAL(clicked()), this, SLOT(find()));
@@ -138,18 +140,19 @@ void MainWindow::openFile(QTreeWidgetItem *item) {
 
 void MainWindow::displayFilesWithStr(QVector<QString> files) {
     ui->filesWithStr->clear();
-    QFile prog_res("prog_res.txt");
-    prog_res.open(QIODevice::WriteOnly);
-    QTextStream str(&prog_res);
     for (auto &s : files) {
         auto *item = new QTreeWidgetItem(ui->filesWithStr);
         ui->filesWithStr->addTopLevelItem(item);
         QDir file(s);
         item->setText(0, file.dirName());
         item->setText(1, file.absolutePath());
-        str << file.absolutePath() << "\n";
     }
     auto end = std::chrono::steady_clock::now();
     auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
     ui->statusBar->showMessage("The time: " + QString::number(elapsed_ms.count()) + " ms, files: " + QString::number(files.size()));
+}
+
+void MainWindow::liveSearch(const QString &str) {
+    if (str.size() >= 4)
+        find();
 }

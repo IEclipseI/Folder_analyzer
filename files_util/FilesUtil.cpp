@@ -41,14 +41,10 @@ void FilesUtil::addDirectoryImpl(Index &index, QString &directory) {
         }
         emit filesToIndexCounted(files.size());
         std::cout << "files " <<files.size()<< "\n";
-//        std::sort(files.begin(), files.end(),
-//                  [](const QPair<QString, qint64> &a, const QPair<QString, qint64> &b) { return a.second > b.second; });
         files_to_index = files.size();
-        int threads_count = std::max(4u, std::thread::hardware_concurrency() * 4);
+        int threads_count = std::max(2u, std::thread::hardware_concurrency());
         QVector<QVector<QString>> groups(threads_count);
         for (int i = 0; i < files_to_index; i++) {
-//            int ind = (i / files_to_index % 2) * files_to_index +
-//                      (1 - 2 * (i / files_to_index % 2)) * (i % threads_count - i / files_to_index % 2);
             groups[i % threads_count].push_back(files[i].first);
         }
 
@@ -105,7 +101,7 @@ void FilesUtil::findFilesWith() {
         }
     }
     files_to_check = containsAllTrigrams.size();
-    int threads_count = std::max(4u, std::thread::hardware_concurrency() * 2);
+    int threads_count = std::max(2u, std::thread::hardware_concurrency());
     QVector<QVector<QString>> groups(threads_count);
     for (int i = 0; i < files_to_check; i++) {
         groups[i % threads_count].push_back(containsAllTrigrams[i]);
@@ -114,8 +110,6 @@ void FilesUtil::findFilesWith() {
         auto *string_searcher_thread = new QThread();
         auto *string_searcher = new StringSearcher(groups[i], dir_);
         string_searcher->moveToThread(string_searcher_thread);
-
-        qRegisterMetaType<QVector<QString>>("QVector<QString>");
 
         connect(string_searcher_thread, SIGNAL(started()), string_searcher, SLOT(searchString()));
         connect(string_searcher, SIGNAL(searchEnds(QVector<QString>, int)), string_searcher_thread, SLOT(quit()));
