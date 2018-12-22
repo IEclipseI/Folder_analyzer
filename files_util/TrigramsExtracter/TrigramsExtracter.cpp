@@ -35,9 +35,8 @@ void TrigramsExtracter::extractTrigrams() {
 
 void TrigramsExtracter::getFileTrigrams(QString &filepath, TrigramsContainer &trigrams) {
     QFile file(filepath);
-//    std::cout << filepath.toStdString() << "\n";
-    QSet<trigram> tr;
     if (file.open(QIODevice::ReadOnly)) {
+        QSet<trigram> tr;
         char buf[BUFFER_SIZE + TRIGRAM_SIZE - 1];
         qint64 read = file.read(buf, BUFFER_SIZE) - TRIGRAM_SIZE + 1;
         if (read >= 1)
@@ -54,11 +53,14 @@ void TrigramsExtracter::getFileTrigrams(QString &filepath, TrigramsContainer &tr
                     buf[i - 1] = buf[BUFFER_SIZE - TRIGRAM_SIZE + i];
                 }
             } while ((read = file.read(buf + TRIGRAM_SIZE - 1, BUFFER_SIZE)) >= 1);
+        for (auto t : tr) {
+            trigrams.insert(t);
+        }
+        file.close();
+    } else {
+        std::cout << filepath.toStdString() << "\n";
     }
-    for (auto t : tr) {
-        trigrams.insert(t);
-    }
-    file.close();
+
 }
 
 void TrigramsExtracter::addStringTrigrams(QSet<trigram> &trigrams, const char *buffer, qint64 size) {
