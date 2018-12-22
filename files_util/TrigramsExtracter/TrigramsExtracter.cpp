@@ -43,7 +43,7 @@ void TrigramsExtracter::getFileTrigrams(QString &filepath, TrigramsContainer &tr
         if (read >= 1)
             do {
                 read += 2;
-                std::cout << filepath.toStdString() << " " << read << "\n";
+//                std::cout << filepath.toStdString() << " " << read << "\n";
                 resolveInterruptionRequest();
                 addStringTrigrams(tr, buf, read);
                 if (tr.size() > 20000) {
